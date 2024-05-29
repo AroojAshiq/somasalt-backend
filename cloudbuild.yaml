@@ -1,0 +1,39 @@
+steps:
+  # download .env file
+  - name: "gcr.io/cloud-builders/gsutil"
+  # build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/why-knot-me-backend:$COMMIT_SHA', '.' ]
+    id: Build
+  # push the container image to gcr
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ 'push', 'gcr.io/$PROJECT_ID/why-knot-me-backend:$COMMIT_SHA']
+    id: Push
+  # deploy container image to Cloud Run Anthos
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - why-knot-me-backend
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/why-knot-me-backend:$COMMIT_SHA'
+      - '--platform'
+      - 'managed'
+      - '--region'
+      - 'us-central1'
+      - '--port'
+      - '8000'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+    id: Deploy
+images:
+  - 'gcr.io/$PROJECT_ID/why-knot-me-backend:$COMMIT_SHA'
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-gke
+  - why-knot-me
+  - 'why-knot-me-backend'
+options:
+  logging: CLOUD_LOGGING_ONLY
